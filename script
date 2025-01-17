@@ -1,0 +1,105 @@
+import pygame
+import random
+import sys
+
+# Inicjalizacja Pygame
+pygame.init()
+
+# Ustawienia ekranu
+SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600  # Wymiary okna gry
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))  # Tworzenie okna gry
+pygame.display.set_caption("Tesla Cybertruck Infinite Drive")  # Ustawienie tytułu okna
+
+# Kolory
+WHITE = (255, 255, 255)  # Kolor biały
+BLACK = (0, 0, 0)        # Kolor czarny
+GRAY = (50, 50, 50)      # Kolor szary
+RED = (255, 0, 0)        # Kolor czerwony
+
+# Ustawienia gry
+FPS = 60  # Liczba klatek na sekundę
+clock = pygame.time.Clock()  # Zegar do kontrolowania FPS
+
+# Załadowanie obrazu pojazdu (możesz zamienić na swój obraz Tesli Cybertruck)
+car_width, car_height = 80, 160  # Wymiary samochodu
+car = pygame.Surface((car_width, car_height))  # Tworzenie powierzchni dla samochodu
+car.fill(GRAY)  # Wypełnienie powierzchni szarym kolorem
+
+# Pozycja gracza
+player_x = SCREEN_WIDTH // 2 - car_width // 2  # Początkowa pozycja X gracza (środek ekranu)
+player_y = SCREEN_HEIGHT - car_height - 20    # Początkowa pozycja Y gracza (dół ekranu)
+player_speed = 5  # Prędkość poruszania się gracza
+
+# Lista przeszkód
+obstacles = []  # Lista przechowująca przeszkody
+obstacle_width, obstacle_height = 80, 160  # Wymiary przeszkód
+obstacle_speed = 5  # Prędkość przesuwania się przeszkód
+
+# Wynik
+score = 0  # Początkowy wynik gracza
+font = pygame.font.Font(None, 36)  # Czcionka do wyświetlania tekstu
+
+def draw_text(text, x, y, color=WHITE):
+    """Rysuje tekst na ekranie."""
+    rendered_text = font.render(text, True, color)  # Renderowanie tekstu
+    screen.blit(rendered_text, (x, y))  # Wyświetlenie tekstu na ekranie
+
+# Funkcja do generowania przeszkód
+def generate_obstacle():
+    """Generuje nową przeszkodę na losowej pozycji."""
+    obstacle_x = random.randint(0, SCREEN_WIDTH - obstacle_width)  # Losowa pozycja X
+    obstacle_y = -obstacle_height  # Pozycja Y (poza ekranem, na górze)
+    obstacles.append([obstacle_x, obstacle_y])  # Dodanie przeszkody do listy
+
+# Główna pętla gry
+running = True
+while running:
+    screen.fill(BLACK)  # Wypełnienie tła kolorem czarnym
+
+    # Obsługa zdarzeń
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:  # Sprawdzanie, czy gracz zamknął okno gry
+            running = False
+
+    # Sterowanie graczem
+    keys = pygame.key.get_pressed()  # Pobranie stanu klawiszy
+    if keys[pygame.K_LEFT] and player_x > 0:  # Poruszanie w lewo, jeśli nie wyjdziemy poza ekran
+        player_x -= player_speed
+    if keys[pygame.K_RIGHT] and player_x < SCREEN_WIDTH - car_width:  # Poruszanie w prawo
+        player_x += player_speed
+
+    # Rysowanie gracza
+    screen.blit(car, (player_x, player_y))  # Rysowanie samochodu na ekranie
+
+    # Generowanie przeszkód
+    if random.randint(1, 50) == 1:  # Losowa szansa na wygenerowanie przeszkody
+        generate_obstacle()
+
+    # Aktualizacja i rysowanie przeszkód
+    for obstacle in obstacles[:]:  # Iteracja po kopii listy przeszkód
+        obstacle[1] += obstacle_speed  # Przesuwanie przeszkody w dół
+        if obstacle[1] > SCREEN_HEIGHT:  # Jeśli przeszkoda wyszła poza ekran
+            obstacles.remove(obstacle)  # Usunięcie przeszkody z listy
+            score += 1  # Dodanie punktu za ominięcie przeszkody
+        pygame.draw.rect(screen, RED, (obstacle[0], obstacle[1], obstacle_width, obstacle_height))  # Rysowanie przeszkody
+
+    # Kolizje
+    for obstacle in obstacles:
+        if (player_x < obstacle[0] + obstacle_width and
+            player_x + car_width > obstacle[0] and
+            player_y < obstacle[1] + obstacle_height and
+            player_y + car_height > obstacle[1]):  # Sprawdzanie kolizji gracza z przeszkodą
+            draw_text("Game Over!", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2, RED)  # Wyświetlenie komunikatu "Game Over"
+            pygame.display.flip()  # Aktualizacja ekranu
+            pygame.time.wait(2000)  # Pauza przed zamknięciem gry
+            running = False  # Zakończenie pętli gry
+
+    # Wyświetlanie wyniku
+    draw_text(f"Score: {score}", 10, 10)  # Wyświetlenie wyniku w lewym górnym rogu
+
+    # Aktualizacja ekranu
+    pygame.display.flip()  # Odświeżenie ekranu
+    clock.tick(FPS)  # Ustawienie liczby klatek na sekundę
+
+pygame.quit()  # Zakończenie działania Pygame
+sys.exit()  # Wyjście z programu
